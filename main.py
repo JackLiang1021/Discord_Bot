@@ -28,7 +28,7 @@ GUILD_ID = int(os.getenv("GUILD_ID", 0))
 #   }
 # }
 # ─────────────────────────────────────────────
-STATE_FILE = "commission_state.json"
+STATE_FILE = "/data/commission_state.json"
 
 
 def load_state() -> dict:
