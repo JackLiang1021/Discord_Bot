@@ -418,7 +418,7 @@ class CloseCommissionView(discord.ui.View):
         super().__init__(timeout=None)
 
     @discord.ui.button(
-        label=" Close Commission",
+        label="🔒 Close Commission",
         style=discord.ButtonStyle.danger,
         custom_id="close_commission_button",
     )
@@ -450,11 +450,11 @@ class CloseCommissionView(discord.ui.View):
                     pass
 
         button.disabled = True
-        button.label = " Commission Closed"
+        button.label = "🔒 Commission Closed"
         await interaction.message.edit(view=self)
 
         await interaction.response.send_message(
-            f" Commission closed by {interaction.user.mention}. "
+            f"🔒 Commission closed by {interaction.user.mention}. "
             "Both parties have been removed from this channel."
         )
 
@@ -481,7 +481,23 @@ async def post_commission(
     creator_role = discord.utils.get(interaction.guild.roles, name=CREATOR_ROLE_NAME)
     if creator_role is None or creator_role not in interaction.user.roles:
         await interaction.response.send_message(
-            f" You need the **{CREATOR_ROLE_NAME}** role to post a commission listing.",
+            f"❌ You need the **{CREATOR_ROLE_NAME}** role to post a commission listing.",
+            ephemeral=True,
+        )
+        return
+
+    # ── Check this is a forum thread owned by the user ───────────────────
+    channel = interaction.channel
+    if not isinstance(channel, discord.Thread):
+        await interaction.response.send_message(
+            "❌ You can only use this command inside your own forum thread.",
+            ephemeral=True,
+        )
+        return
+
+    if channel.owner_id != interaction.user.id:
+        await interaction.response.send_message(
+            "❌ You can only post a commission listing in a thread you own.",
             ephemeral=True,
         )
         return
@@ -506,7 +522,7 @@ async def post_commission(
     # Send as a regular channel message (not a webhook followup) so that
     # message.edit() works correctly when refreshing the embed later.
     # We acknowledge the deferred interaction with a silent followup first.
-    await interaction.followup.send(" Posting your listing…", ephemeral=True)
+    await interaction.followup.send("✅ Posting your listing…", ephemeral=True)
     channel = interaction.channel
     sent_message = await channel.send(embed=embed, view=view)
 
@@ -529,7 +545,7 @@ async def close_commission_cmd(interaction: discord.Interaction):
     channel = interaction.channel
     if not channel.name.startswith("commission-"):
         await interaction.response.send_message(
-            " This command can only be used inside a commission channel.",
+            "❌ This command can only be used inside a commission channel.",
             ephemeral=True,
         )
         return
@@ -558,7 +574,7 @@ async def close_commission_cmd(interaction: discord.Interaction):
                 pass
 
     await interaction.response.send_message(
-        f" Commission closed by {interaction.user.mention}. "
+        f"🔒 Commission closed by {interaction.user.mention}. "
         "Both parties have been removed from this channel."
     )
 
@@ -571,14 +587,14 @@ async def lock_commissions(interaction: discord.Interaction):
     creator_role = discord.utils.get(interaction.guild.roles, name=CREATOR_ROLE_NAME)
     if creator_role is None or creator_role not in interaction.user.roles:
         await interaction.response.send_message(
-            f" You need the **{CREATOR_ROLE_NAME}** role to use this command.",
+            f"❌ You need the **{CREATOR_ROLE_NAME}** role to use this command.",
             ephemeral=True,
         )
         return
 
     if interaction.user.id in state["locked"]:
         await interaction.response.send_message(
-            " Your commissions are already locked.", ephemeral=True
+            "⚠️ Your commissions are already locked.", ephemeral=True
         )
         return
 
@@ -587,7 +603,7 @@ async def lock_commissions(interaction: discord.Interaction):
     save_state()
     await refresh_all_listings(interaction.user.id, locked=True)
     await interaction.followup.send(
-        " Your commissions are now **locked**. All your listings have been updated.",
+        "🔒 Your commissions are now **locked**. All your listings have been updated.",
         ephemeral=True,
     )
 
@@ -600,14 +616,14 @@ async def unlock_commissions(interaction: discord.Interaction):
     creator_role = discord.utils.get(interaction.guild.roles, name=CREATOR_ROLE_NAME)
     if creator_role is None or creator_role not in interaction.user.roles:
         await interaction.response.send_message(
-            f" You need the **{CREATOR_ROLE_NAME}** role to use this command.",
+            f"❌ You need the **{CREATOR_ROLE_NAME}** role to use this command.",
             ephemeral=True,
         )
         return
 
     if interaction.user.id not in state["locked"]:
         await interaction.response.send_message(
-            " Your commissions are already open.", ephemeral=True
+            "⚠️ Your commissions are already open.", ephemeral=True
         )
         return
 
@@ -616,7 +632,7 @@ async def unlock_commissions(interaction: discord.Interaction):
     save_state()
     await refresh_all_listings(interaction.user.id, locked=False)
     await interaction.followup.send(
-        " Your commissions are now **open**. All your listings have been updated.",
+        "✅ Your commissions are now **open**. All your listings have been updated.",
         ephemeral=True,
     )
 
@@ -629,7 +645,7 @@ async def commission_status(interaction: discord.Interaction):
     creator_role = discord.utils.get(interaction.guild.roles, name=CREATOR_ROLE_NAME)
     if creator_role is None or creator_role not in interaction.user.roles:
         await interaction.response.send_message(
-            f" You need the **{CREATOR_ROLE_NAME}** role to use this command.",
+            f"❌ You need the **{CREATOR_ROLE_NAME}** role to use this command.",
             ephemeral=True,
         )
         return
@@ -639,13 +655,13 @@ async def commission_status(interaction: discord.Interaction):
 
     if interaction.user.id in state["locked"]:
         await interaction.response.send_message(
-            f" Your commissions are currently **locked** ({listing_count} active listing(s)). "
+            f"🔒 Your commissions are currently **locked** ({listing_count} active listing(s)). "
             "Use `/unlock_commissions` to open them.",
             ephemeral=True,
         )
     else:
         await interaction.response.send_message(
-            f" Your commissions are currently **open** ({listing_count} active listing(s)). "
+            f"✅ Your commissions are currently **open** ({listing_count} active listing(s)). "
             "Use `/lock_commissions` to stop accepting new ones.",
             ephemeral=True,
         )
@@ -671,7 +687,7 @@ async def on_ready():
     tree.copy_global_to(guild=g)
     await tree.sync(guild=g)
 
-    print(f"   Logged in as {bot.user} (ID: {bot.user.id})")
+    print(f"✅ Logged in as {bot.user} (ID: {bot.user.id})")
     print(f"   Creator role  : {CREATOR_ROLE_NAME}")
     print(f"   Category ID   : {COMMISSION_CATEGORY_ID}")
     print(f"   Guild ID      : {GUILD_ID}")
